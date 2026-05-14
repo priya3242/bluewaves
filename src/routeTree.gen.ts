@@ -22,8 +22,8 @@ import { Route as ApiExpensesIndexRouteImport } from './routes/api/expenses/inde
 import { Route as ApiAnalyticsIndexRouteImport } from './routes/api/analytics/index'
 import { Route as AuthenticatedTripsIndexRouteImport } from './routes/_authenticated/trips.index'
 import { Route as ApiTripsTripIdRouteImport } from './routes/api/trips/$tripId'
-import { Route as ApiPublicSmsRouteImport } from './routes/api/public/sms'
 import { Route as ApiSmsMessagesSmsIdRouteImport } from './routes/api/sms-messages/$smsId'
+import { Route as ApiPublicSmsRouteImport } from './routes/api/public/sms'
 import { Route as ApiPassengersPassengerIdRouteImport } from './routes/api/passengers/$passengerId'
 import { Route as ApiExpensesExpenseIdRouteImport } from './routes/api/expenses/$expenseId'
 import { Route as ApiAuthSignupRouteImport } from './routes/api/auth/signup'
@@ -96,14 +96,14 @@ const ApiTripsTripIdRoute = ApiTripsTripIdRouteImport.update({
   path: '/api/trips/$tripId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicSmsRoute = ApiPublicSmsRouteImport.update({
-  id: '/api/public/sms',
-  path: '/api/public/sms',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiSmsMessagesSmsIdRoute = ApiSmsMessagesSmsIdRouteImport.update({
   id: '/api/sms-messages/$smsId',
   path: '/api/sms-messages/$smsId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicSmsRoute = ApiPublicSmsRouteImport.update({
+  id: '/api/public/sms',
+  path: '/api/public/sms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPassengersPassengerIdRoute =
@@ -157,8 +157,8 @@ export interface FileRoutesByFullPath {
   '/api/auth/signup': typeof ApiAuthSignupRoute
   '/api/expenses/$expenseId': typeof ApiExpensesExpenseIdRoute
   '/api/passengers/$passengerId': typeof ApiPassengersPassengerIdRoute
-  '/api/sms-messages/$smsId': typeof ApiSmsMessagesSmsIdRoute
   '/api/public/sms': typeof ApiPublicSmsRoute
+  '/api/sms-messages/$smsId': typeof ApiSmsMessagesSmsIdRoute
   '/api/trips/$tripId': typeof ApiTripsTripIdRoute
   '/trips/': typeof AuthenticatedTripsIndexRoute
   '/api/analytics/': typeof ApiAnalyticsIndexRoute
@@ -180,8 +180,8 @@ export interface FileRoutesByTo {
   '/api/auth/signup': typeof ApiAuthSignupRoute
   '/api/expenses/$expenseId': typeof ApiExpensesExpenseIdRoute
   '/api/passengers/$passengerId': typeof ApiPassengersPassengerIdRoute
-  '/api/sms-messages/$smsId': typeof ApiSmsMessagesSmsIdRoute
   '/api/public/sms': typeof ApiPublicSmsRoute
+  '/api/sms-messages/$smsId': typeof ApiSmsMessagesSmsIdRoute
   '/api/trips/$tripId': typeof ApiTripsTripIdRoute
   '/trips': typeof AuthenticatedTripsIndexRoute
   '/api/analytics': typeof ApiAnalyticsIndexRoute
@@ -205,8 +205,8 @@ export interface FileRoutesById {
   '/api/auth/signup': typeof ApiAuthSignupRoute
   '/api/expenses/$expenseId': typeof ApiExpensesExpenseIdRoute
   '/api/passengers/$passengerId': typeof ApiPassengersPassengerIdRoute
-  '/api/sms-messages/$smsId': typeof ApiSmsMessagesSmsIdRoute
   '/api/public/sms': typeof ApiPublicSmsRoute
+  '/api/sms-messages/$smsId': typeof ApiSmsMessagesSmsIdRoute
   '/api/trips/$tripId': typeof ApiTripsTripIdRoute
   '/_authenticated/trips/': typeof AuthenticatedTripsIndexRoute
   '/api/analytics/': typeof ApiAnalyticsIndexRoute
@@ -230,8 +230,8 @@ export interface FileRouteTypes {
     | '/api/auth/signup'
     | '/api/expenses/$expenseId'
     | '/api/passengers/$passengerId'
-    | '/api/sms-messages/$smsId'
     | '/api/public/sms'
+    | '/api/sms-messages/$smsId'
     | '/api/trips/$tripId'
     | '/trips/'
     | '/api/analytics/'
@@ -253,8 +253,8 @@ export interface FileRouteTypes {
     | '/api/auth/signup'
     | '/api/expenses/$expenseId'
     | '/api/passengers/$passengerId'
-    | '/api/sms-messages/$smsId'
     | '/api/public/sms'
+    | '/api/sms-messages/$smsId'
     | '/api/trips/$tripId'
     | '/trips'
     | '/api/analytics'
@@ -277,8 +277,8 @@ export interface FileRouteTypes {
     | '/api/auth/signup'
     | '/api/expenses/$expenseId'
     | '/api/passengers/$passengerId'
-    | '/api/sms-messages/$smsId'
     | '/api/public/sms'
+    | '/api/sms-messages/$smsId'
     | '/api/trips/$tripId'
     | '/_authenticated/trips/'
     | '/api/analytics/'
@@ -298,8 +298,8 @@ export interface RootRouteChildren {
   ApiAuthSignupRoute: typeof ApiAuthSignupRoute
   ApiExpensesExpenseIdRoute: typeof ApiExpensesExpenseIdRoute
   ApiPassengersPassengerIdRoute: typeof ApiPassengersPassengerIdRoute
-  ApiSmsMessagesSmsIdRoute: typeof ApiSmsMessagesSmsIdRoute
   ApiPublicSmsRoute: typeof ApiPublicSmsRoute
+  ApiSmsMessagesSmsIdRoute: typeof ApiSmsMessagesSmsIdRoute
   ApiTripsTripIdRoute: typeof ApiTripsTripIdRoute
   ApiAnalyticsIndexRoute: typeof ApiAnalyticsIndexRoute
   ApiExpensesIndexRoute: typeof ApiExpensesIndexRoute
@@ -310,13 +310,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/api/sms-messages/$smsId': {
-      id: '/api/sms-messages/$smsId'
-      path: '/api/sms-messages/$smsId'
-      fullPath: '/api/sms-messages/$smsId'
-      preLoaderRoute: typeof ApiSmsMessagesSmsIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -408,6 +401,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTripsTripIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/sms-messages/$smsId': {
+      id: '/api/sms-messages/$smsId'
+      path: '/api/sms-messages/$smsId'
+      fullPath: '/api/sms-messages/$smsId'
+      preLoaderRoute: typeof ApiSmsMessagesSmsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/sms': {
       id: '/api/public/sms'
       path: '/api/public/sms'
@@ -497,8 +497,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSignupRoute: ApiAuthSignupRoute,
   ApiExpensesExpenseIdRoute: ApiExpensesExpenseIdRoute,
   ApiPassengersPassengerIdRoute: ApiPassengersPassengerIdRoute,
-  ApiSmsMessagesSmsIdRoute: ApiSmsMessagesSmsIdRoute,
   ApiPublicSmsRoute: ApiPublicSmsRoute,
+  ApiSmsMessagesSmsIdRoute: ApiSmsMessagesSmsIdRoute,
   ApiTripsTripIdRoute: ApiTripsTripIdRoute,
   ApiAnalyticsIndexRoute: ApiAnalyticsIndexRoute,
   ApiExpensesIndexRoute: ApiExpensesIndexRoute,
