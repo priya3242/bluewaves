@@ -2,7 +2,11 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { ArrowLeft, Plus, Trash2, Link2, BadgeCheck, Banknote, Smartphone } from "lucide-react";
+import {
+  ArrowLeft, Plus, Trash2, Link2, BadgeCheck, Banknote, Smartphone,
+  X, Hash, Calendar, Clock, Phone, CreditCard, Building2, User, FileText,
+  CheckCircle2, ChevronRight,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/trips/$tripId")({ component: TripDetail });
 
@@ -12,13 +16,16 @@ type Passenger = {
   sms?: { id: string; amount: number; upi_ref: string | null; sender_name: string | null; upi_id: string | null } | null;
 };
 type Trip = { id: string; name: string; trip_date: string; trip_time: string | null; base_fare: number; notes: string | null };
-type SmsMsg = { id: string; amount: number; upi_ref: string | null; upi_id: string | null; sender_name: string | null; bank_to: string | null; bank_from: string | null; from_number: string | null; received_at: string; text: string };
+type SmsMsg = {
+  id: string; amount: number; upi_ref: string | null; upi_id: string | null;
+  sender_name: string | null; bank_to: string | null; bank_from: string | null;
+  from_number: string | null; received_at: string; text: string;
+};
 
 function notify(msg: string, isError = false) {
-  // Simple toast fallback (avoids sonner dep issue)
   if (typeof window !== "undefined") {
     const el = document.createElement("div");
-    el.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:${isError?"#ef4444":"#22c55e"};color:#fff;padding:10px 20px;border-radius:12px;z-index:9999;font-size:14px;font-weight:600`;
+    el.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:${isError ? "#ef4444" : "#22c55e"};color:#fff;padding:10px 20px;border-radius:12px;z-index:9999;font-size:14px;font-weight:600;box-shadow:0 4px 24px rgba(0,0,0,0.18)`;
     el.textContent = msg;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 2500);
@@ -38,20 +45,14 @@ function TripDetail() {
   const [fare, setFare] = useState("");
   const [method, setMethod] = useState<"cash" | "upi" | "pending">("cash");
   const [linkFor, setLinkFor] = useState<{ id: string; fare: number } | null>(null);
+  const [viewSmsId, setViewSmsId] = useState<string | null>(null);
 
   // Load trip + passengers
   const tripQ = useQuery({
     queryKey: ["trip", tripId],
     queryFn: async () => {
       const d = await fetch(`/api/trips/${tripId}`, { credentials: "include" }).then(json200);
-      // Merge SMS data into passengers
-      const passengers: Passenger[] = await Promise.all(
-        (d.passengers as Passenger[]).map(async (p) => {
-          if (!p.linked_sms_id) return p;
-          // Try to get SMS details from the messages list (cached)
-          return p;
-        })
-      );
+      const passengers: Passenger[] = (d.passengers as Passenger[]);
       return { trip: d.trip as Trip, passengers };
     },
     enabled: !!user,
@@ -64,6 +65,16 @@ function TripDetail() {
     queryFn: async () => {
       const d = await fetch("/api/sms-messages/?linked=false", { credentials: "include" }).then(json200);
       return d.messages as SmsMsg[];
+    },
+  });
+
+  // Single SMS detail for the detail sheet
+  const smsDetailQ = useQuery({
+    queryKey: ["sms-detail", viewSmsId],
+    enabled: !!viewSmsId,
+    queryFn: async () => {
+      const d = await fetch(`/api/sms-messages/${viewSmsId}`, { credentials: "include" }).then(json200);
+      return d.message as SmsMsg;
     },
   });
 
@@ -153,7 +164,7 @@ function TripDetail() {
       {tripQ.data?.trip && (
         <div className="rounded-3xl bg-[image:var(--gradient-hero)] text-primary-foreground p-5 shadow-[var(--shadow-elevated)]">
           <p className="text-xs uppercase tracking-wider opacity-80">
-            {tripQ.data.trip.trip_date}{tripQ.data.trip.trip_time ? ` · ${tripQ.data.trip.trip_time.slice(0,5)}` : ""}
+            {tripQ.data.trip.trip_date}{tripQ.data.trip.trip_time ? ` · ${tripQ.data.trip.trip_time.slice(0, 5)}` : ""}
           </p>
           <h2 className="font-display text-2xl font-semibold mt-1">{tripQ.data.trip.name}</h2>
           <div className="flex gap-4 mt-3 text-sm">
@@ -184,10 +195,20 @@ function TripDetail() {
               <div className="flex-1 min-w-0">
                 <p className="font-medium">{p.name}</p>
                 <p className="text-xs text-muted-foreground">{p.phone || "—"} · {p.payment_method.toUpperCase()}</p>
+
+                {/* ── Linked SMS badge — clickable to open full detail ── */}
                 {p.linked_sms_id && (
-                  <div className="text-[11px] mt-1.5 bg-accent/10 text-accent p-2 rounded-lg border border-accent/20">
-                    <p className="flex items-center gap-1 font-medium"><Link2 className="size-3" /> Linked SMS</p>
-                  </div>
+                  <button
+                    onClick={() => setViewSmsId(p.linked_sms_id!)}
+                    className="w-full text-left text-[11px] mt-1.5 bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 hover:bg-accent/20 transition-colors active:scale-[0.98]"
+                  >
+                    <span className="flex items-center justify-between gap-1">
+                      <span className="flex items-center gap-1 font-semibold">
+                        <Link2 className="size-3" /> Linked SMS · tap for details
+                      </span>
+                      <ChevronRight className="size-3 opacity-60" />
+                    </span>
+                  </button>
                 )}
               </div>
               <div className="text-right">
@@ -218,7 +239,7 @@ function TripDetail() {
         ))}
       </ul>
 
-      {/* Add passenger sheet */}
+      {/* ── Add passenger sheet ── */}
       {open && (
         <div className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm flex items-end" onClick={() => setOpen(false)}>
           <form
@@ -233,7 +254,7 @@ function TripDetail() {
             <div>
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Payment</span>
               <div className="grid grid-cols-3 gap-2 mt-1.5">
-                {(["cash","upi","pending"] as const).map((m) => (
+                {(["cash", "upi", "pending"] as const).map((m) => (
                   <button type="button" key={m} onClick={() => setMethod(m)}
                     className={`h-11 rounded-xl text-sm font-medium border transition ${
                       method === m ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground"
@@ -247,7 +268,7 @@ function TripDetail() {
         </div>
       )}
 
-      {/* Link SMS sheet */}
+      {/* ── Link SMS sheet ── */}
       {linkFor && (
         <div className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm flex items-end" onClick={() => setLinkFor(null)}>
           <div onClick={(e) => e.stopPropagation()} className="w-full max-w-xl mx-auto bg-background rounded-t-3xl p-6 space-y-3 shadow-[var(--shadow-elevated)] max-h-[80vh] overflow-y-auto">
@@ -283,10 +304,164 @@ function TripDetail() {
           </div>
         </div>
       )}
+
+      {/* ── Full Transaction Detail Sheet ── */}
+      {viewSmsId && (
+        <SmsDetailSheet
+          smsId={viewSmsId}
+          sms={smsDetailQ.data ?? null}
+          isLoading={smsDetailQ.isLoading}
+          onClose={() => setViewSmsId(null)}
+        />
+      )}
     </div>
   );
 }
 
+/* ═══════════════════════════════════════════════
+   Full Transaction Details Bottom Sheet
+═══════════════════════════════════════════════ */
+function SmsDetailSheet({
+  smsId, sms, isLoading, onClose,
+}: {
+  smsId: string; sms: SmsMsg | null; isLoading: boolean; onClose: () => void;
+}) {
+  const fmtDate = (iso: string) => {
+    const d = new Date(iso);
+    return {
+      date: d.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" }),
+      time: d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    };
+  };
+
+  const dt = sms ? fmtDate(sms.received_at) : null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-foreground/50 backdrop-blur-sm flex items-end"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-xl mx-auto bg-background rounded-t-3xl shadow-[var(--shadow-elevated)] max-h-[92vh] overflow-y-auto"
+        style={{ animation: "slideUp 0.28s cubic-bezier(0.32,0.72,0,1)" }}
+      >
+        {/* Header pill */}
+        <div className="sticky top-0 bg-background/90 backdrop-blur-md pt-3 pb-2 px-6 z-10 border-b border-border/60">
+          <div className="w-12 h-1 bg-border rounded-full mx-auto mb-3" />
+          <div className="flex items-center justify-between">
+            <h3 className="font-display text-xl font-semibold">Transaction Details</h3>
+            <button
+              onClick={onClose}
+              className="size-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {isLoading && (
+            <div className="py-12 flex flex-col items-center gap-3 text-muted-foreground">
+              <div className="size-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm">Loading transaction…</p>
+            </div>
+          )}
+
+          {!isLoading && sms && (
+            <>
+              {/* Amount hero */}
+              <div className="rounded-2xl bg-[image:var(--gradient-hero)] text-primary-foreground p-5 text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <CheckCircle2 className="size-5 opacity-80" />
+                  <span className="text-sm opacity-80 font-medium uppercase tracking-wider">UPI Payment Received</span>
+                </div>
+                <p className="font-display text-4xl font-bold tracking-tight">
+                  ₹{Number(sms.amount ?? 0).toLocaleString("en-IN")}
+                </p>
+                {dt && (
+                  <p className="text-xs opacity-70 mt-2">{dt.date} · {dt.time}</p>
+                )}
+              </div>
+
+              {/* Details grid */}
+              <div className="space-y-2">
+                {sms.sender_name && (
+                  <DetailRow icon={<User className="size-4" />} label="Sender Name" value={sms.sender_name} />
+                )}
+                {sms.upi_id && (
+                  <DetailRow icon={<Smartphone className="size-4" />} label="UPI ID" value={sms.upi_id} mono />
+                )}
+                {sms.from_number && (
+                  <DetailRow icon={<Phone className="size-4" />} label="From Number" value={sms.from_number} mono />
+                )}
+                {sms.upi_ref && (
+                  <DetailRow icon={<Hash className="size-4" />} label="UPI Reference" value={sms.upi_ref} mono highlight />
+                )}
+                {sms.bank_to && (
+                  <DetailRow icon={<CreditCard className="size-4" />} label="To Account" value={sms.bank_to} mono />
+                )}
+                {sms.bank_from && (
+                  <DetailRow icon={<Building2 className="size-4" />} label="From Bank" value={sms.bank_from} />
+                )}
+                {dt && (
+                  <>
+                    <DetailRow icon={<Calendar className="size-4" />} label="Date" value={dt.date} />
+                    <DetailRow icon={<Clock className="size-4" />} label="Time" value={dt.time} />
+                  </>
+                )}
+              </div>
+
+              {/* Raw SMS text */}
+              {sms.text && (
+                <div className="rounded-2xl bg-secondary/60 border border-border p-4">
+                  <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <FileText className="size-3.5" />
+                    Original SMS
+                  </div>
+                  <p className="text-sm leading-relaxed text-foreground/90 break-words">{sms.text}</p>
+                </div>
+              )}
+
+              {/* SMS ID badge */}
+              <p className="text-center text-[10px] text-muted-foreground/60 font-mono">ID: {smsId}</p>
+            </>
+          )}
+
+          {!isLoading && !sms && (
+            <p className="text-center py-10 text-sm text-muted-foreground">Could not load transaction details.</p>
+          )}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/* ── Reusable detail row ── */
+function DetailRow({
+  icon, label, value, mono = false, highlight = false,
+}: {
+  icon: React.ReactNode; label: string; value: string; mono?: boolean; highlight?: boolean;
+}) {
+  return (
+    <div className={`flex items-start gap-3 p-3 rounded-xl ${highlight ? "bg-accent/10 border border-accent/25" : "bg-card border border-border"}`}>
+      <span className={`mt-0.5 ${highlight ? "text-accent" : "text-muted-foreground"}`}>{icon}</span>
+      <div className="flex-1 min-w-0">
+        <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${highlight ? "text-accent" : "text-muted-foreground"}`}>{label}</p>
+        <p className={`text-sm break-all ${mono ? "font-mono" : "font-medium"} ${highlight ? "text-accent font-semibold" : "text-foreground"}`}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Input helper ── */
 function Input({ label, value, onChange, type = "text", required, placeholder }: {
   label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean; placeholder?: string;
 }) {
